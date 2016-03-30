@@ -1071,21 +1071,23 @@ int main(int argc, char **argv)
     cout << "Level " << i << endl;
 
     // Fill the hole of the image
-
-    sc_fill_hole2(multiscale_img(i), multiscale_mask(i));
- 
+    start = clock();// <------------------------------------ time control, START -----------------------------> START
+    sc_fill_hole3(multiscale_img(i), multiscale_mask(i));
+    end = clock();// <------------------------------------ time control, END -----------------------------> END
     // Upscale the image to the next level
     if (i > 0)
       sc_upscale_img(multiscale_img(i), multiscale_mask(i-1), multiscale_img(i-1));
   }
+  
+  total += end - start;// <------------------------------------ time control, ACCUMULATE TOTAL -----------------------------> ACCUMULATE TOTAL
+  printf("Time : %f\n",(double)total/CLOCKS_PER_SEC );
   
   // Result...
   CImg<unsigned char> output = multiscale_img(0);
   output.save("output.png");
 		
   return 0;
-	start = clock();// <------------------------------------ time control, START -----------------------------> START
-	end = clock();// <------------------------------------ time control, END -----------------------------> END
-	total += end - start;// <------------------------------------ time control, ACCUMULATE TOTAL -----------------------------> ACCUMULATE TOTAL
-	printf("Time : %f\n",(double)total/CLOCKS_PER_SEC );
+	
+	
+	
 }
