@@ -666,9 +666,9 @@ void sc_fill_hole2(
 
     /*<--------  P1 Added section --------->*/
     
-    //#pragma omp parallel num_threads(6)
+    #pragma omp parallel num_threads(6)
     {
-        //#pragma omp for
+        #pragma omp for
         for (unsigned int j =0; j<vector_xy.size(); j++)
         {     
             sc_search_wp(vector_xy[j].x, vector_xy[j].y, img, mask_Vq, matrix);
@@ -695,6 +695,58 @@ void sc_fill_hole2(
     iter++;
   }
 	
+}
+void sc_fill_hole3(
+    CImg<unsigned char> &img,
+    CImg<unsigned char> &mask)
+	
+{
+	int iter;
+	
+  // Compute distance function within the mask
+  CImg<float> dist = mask;
+  dist.distance(0, 2);
+
+  // Compute points at which we can perform the search
+  CImg<unsigned char> mask_Vq(mask.width(), mask.height());
+  CImg<unsigned char> mask_Wp(mask.width(), mask.height());
+
+  sc_get_mask_Vq_Wp(mask, mask_Vq, mask_Wp);
+
+  // Image at which search results are stored
+  CImg<dataWp> matrix(img.width(), img.height()); 
+
+  // This process is repeated several times. At each iteration
+  // the color inside the hole is improved.
+  iter = 0;
+  while (iter < MAX_ITER)
+  {
+    cout << "  Iteration number " << iter+1 << endl;
+
+    // Make a copy of the current image
+    CImg<unsigned char> copy = img;
+ #pragma omp parallel num_threads(6)
+    // Search for all pixel holes
+    for(int y = 0; y < img.height(); y++)
+      for(int x = 0; x < img.width(); x++)
+	if (mask_Wp(x,y) == 255)
+	  #pragma omp task
+	  sc_search_wp(x, y, img, mask_Vq, matrix); 
+
+    // Once we have searched for all windows Wp in "mask_Vq", 
+    // we fill the hole with the new color
+    for(int y = 0; y < img.height(); y++)
+      for(int x = 0; x < img.width(); x++)
+	if (mask(x,y) == 255)
+	  sc_get_color(x, y, img, matrix, dist);
+
+    // Check if any pixel has changed. If no pixel
+    // has changed, we can exit the iterations.
+    if (copy == img)
+      break; 
+
+    iter++;
+  }
 }
 /**
  *
