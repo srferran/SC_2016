@@ -748,6 +748,93 @@ void sc_fill_hole3(
     iter++;
   }
 }
+
+
+void sc_fill_hole4(
+    CImg<unsigned char> &img,
+    CImg<unsigned char> &mask)
+	
+{
+	int iter;
+	vector<Coordinates> vector_xy ;
+
+  // Compute distance function within the mask
+  CImg<float> dist = mask;
+  dist.distance(0, 2);
+
+  // Compute points at which we can perform the search
+  CImg<unsigned char> mask_Vq(mask.width(), mask.height());
+  CImg<unsigned char> mask_Wp(mask.width(), mask.height());
+
+  sc_get_mask_Vq_Wp(mask, mask_Vq, mask_Wp);
+
+  // Image at which search results are stored
+  CImg<dataWp> matrix(img.width(), img.height()); 
+
+  // This process is repeated several times. At each iteration
+  // the color inside the hole is improved.
+	
+  iter = 0;
+	
+    // <----------   Added  P1  ----------->
+    // save hole pixels coordinates
+
+    for(int y = 0; y < img.height(); y++)		
+    {
+        for(int x = 0; x < img.width(); x++)
+        {
+            if (mask_Wp(x,y) == 255)
+            {
+                Coordinates c;
+                c.x = x;
+                c.y = y;
+                vector_xy.push_back(c);
+            }
+        }
+    }
+
+   // <---------------- end -------------->
+  while (iter < 10)
+  {
+    cout << "  Iteration number " << iter+1 << endl;
+
+    // Make a copy of the current image
+    CImg<unsigned char> copy = img;
+
+    /*<--------  P1 Added section --------->*/
+    
+    #pragma omp parallel num_threads(6)
+    {
+        #pragma omp single
+        for (unsigned int j =0; j<vector_xy.size(); j++)
+        {   
+	    #pragma omp task shared(img,matrix)
+            sc_search_wp(vector_xy[j].x, vector_xy[j].y, img, mask_Vq, matrix);
+        }
+    }
+	
+    /*------------- End section ----------------*/
+    // Once we have searched for all windows Wp in "mask_Vq", 
+    // we fill the hole with the new color
+
+    for(int y = 0; y < img.height(); y++)
+      for(int x = 0; x < img.width(); x++)
+        if (mask(x,y) == 255)
+            sc_get_color(x, y, img, matrix, dist);
+
+
+
+		
+
+    // Check if any pixel has changed. If no pixel
+    // has changed, we can exit the iterations.
+    if (copy == img)
+      break; 
+    iter++;
+  }
+	
+}
+
 /**
  *
  *  Binarizes the mask setting its values to 0 or 255. This function is used
@@ -1072,7 +1159,7 @@ int main(int argc, char **argv)
 
     // Fill the hole of the image
     start = clock();// <------------------------------------ time control, START -----------------------------> START
-    sc_fill_hole3(multiscale_img(i), multiscale_mask(i));
+    sc_fill_hole4(multiscale_img(i), multiscale_mask(i));
     end = clock();// <------------------------------------ time control, END -----------------------------> END
     // Upscale the image to the next level
     if (i > 0)
