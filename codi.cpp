@@ -725,13 +725,29 @@ void sc_fill_hole3(
 
     // Make a copy of the current image
     CImg<unsigned char> copy = img;
- #pragma omp parallel num_threads(6)
-    // Search for all pixel holes
-    for(int y = 0; y < img.height(); y++)
-      for(int x = 0; x < img.width(); x++)
-	if (mask_Wp(x,y) == 255)
-	  #pragma omp task
-	  sc_search_wp(x, y, img, mask_Vq, matrix); 
+   /*<--------  P1 Added section --------->*/                              
+    #pragma omp parallel  num_threads(6)
+   {
+      // Search for all pixel holes
+      
+      #pragma omp single
+      {
+        for(int y = 0; y < img.height(); y++)
+        {
+          for(int x = 0; x < img.width(); x++)
+          {
+            if (mask_Wp(x,y) == 255)
+            {
+              #pragma omp task
+              {
+                sc_search_wp(x, y, img, mask_Vq, matrix);
+              }
+            }
+          }
+        }
+      }
+    }
+    // <---------------- end -------------->            
 
     // Once we have searched for all windows Wp in "mask_Vq", 
     // we fill the hole with the new color
