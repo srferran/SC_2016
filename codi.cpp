@@ -297,42 +297,45 @@ void sc_search_wp(
   double best_dist = 1e300;
   #pragma omp parallel
   {
-  #pragma omp for schedule(dynamic)
+    #pragma omp for schedule(dynamic) nowait
+  	
   // Full search through all the image
-  for(int vq_y = 0; vq_y < img.height(); vq_y++)
-  {
-    for(int vq_x = 0; vq_x < img.width(); vq_x++)
-    {
-      // We just search for Vq for the pixels labelled
-      // with 255 in the "mask_Vq" image
-      if (mask_Vq(vq_x,vq_y) == 255)
-      {
-	double dist = 0.0;
-
-        // We compare window Wp with Vq. For that reason
-	// we run through all the pixels of the window.
-	for(int k = -length; k <= length; k++)
-	{
-	  for(int l = -length; l <= length; l++)
+	  for(int vq_y = 0; vq_y < img.height(); vq_y++)
 	  {
-	    // For all the color components
-	    for(int c = 0; c < img.spectrum(); c++)
+	    for(int vq_x = 0; vq_x < img.width(); vq_x++)
 	    {
-	      double value = (double) img(wp_x + l, wp_y + k, c) - (double) img(vq_x + l, vq_y + k, c);
-	      dist += value * value;
-	    }
-	  }
-	}
+      		// We just search for Vq for the pixels labelled
+      		// with 255 in the "mask_Vq" image
+	      if (mask_Vq(vq_x,vq_y) == 255)
+	      {
+			double dist = 0.0;
+
+        	// We compare window Wp with Vq. For that reason
+			// we run through all the pixels of the window.
+			for(int k = -length; k <= length; k++)
+			{
+			  for(int l = -length; l <= length; l++)
+			  {
+			    // For all the color components
+			    for(int c = 0; c < img.spectrum(); c++)
+			    {
+			      double value = (double) img(wp_x + l, wp_y + k, c) - (double) img(vq_x + l, vq_y + k, c);
+			      dist += value * value;
+			    }
+			  }
+			}
 
         // This is used to compute the best candidate Vq 
-	if (dist < best_dist) {
-	  best_dist = dist;
-	  matrix(wp_x, wp_y).x = vq_x;
-	  matrix(wp_x, wp_y).y = vq_y;
-	}
-      }
-    }
-  }
+			if (dist < best_dist) 
+			{
+			  best_dist = dist;
+			  matrix(wp_x, wp_y).x = vq_x;
+			  matrix(wp_x, wp_y).y = vq_y;
+			}
+	      }
+	    }
+	  }
+	
   }
 
   // Fill data in matrix
@@ -636,7 +639,7 @@ void sc_fill_hole(
       for(int x = 0; x < img.width(); x++)
 	if (mask_Wp(x,y) == 255)
 	  //sc_search_wp(x, y, img, mask_Vq, matrix);
-	  sc_search_wp5(x, y, img, mask_Vq, matrix);  
+	  sc_search_wp5(x, y, img, mask_Vq, matrix);  //< --------------
 
     // Once we have searched for all windows Wp in "mask_Vq", 
     // we fill the hole with the new color
@@ -725,7 +728,7 @@ void sc_fill_hole2(
     
     #pragma omp parallel num_threads(6)
     {
-        #pragma omp for
+        #pragma omp for nowait
         for (unsigned int j =0; j<vector_xy.size(); j++)
         {     
             sc_search_wp(vector_xy[j].x, vector_xy[j].y, img, mask_Vq, matrix);
@@ -1232,7 +1235,7 @@ int main(int argc, char **argv)
 
     // Fill the hole of the image
     start = clock();// <------------------------------------ time control, START -----------------------------> START
-    sc_fill_hole(multiscale_img(i), multiscale_mask(i));
+    sc_fill_hole2(multiscale_img(i), multiscale_mask(i));
     end = clock();// <------------------------------------ time control, END -----------------------------> END
     // Upscale the image to the next level
     if (i > 0)
