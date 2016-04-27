@@ -285,6 +285,65 @@ void sc_search_wp(
  *
  */
 
+ void sc_search_wp5(
+    int wp_x,
+    int wp_y,
+    CImg<unsigned char> &img,
+    CImg<unsigned char> &mask_Vq,
+    CImg<dataWp> &matrix)
+{
+  int length = (SIZE_WINDOW - 1) / 2;
+
+  double best_dist = 1e300;
+  #pragma omp parallel
+  {
+    #pragma omp for schedule(dynamic) nowait
+  	
+  // Full search through all the image
+	  for(int vq_y = 0; vq_y < img.height(); vq_y++)
+	  {
+	    for(int vq_x = 0; vq_x < img.width(); vq_x++)
+	    {
+      		// We just search for Vq for the pixels labelled
+      		// with 255 in the "mask_Vq" image
+	      if (mask_Vq(vq_x,vq_y) == 255)
+	      {
+			double dist = 0.0;
+
+        	// We compare window Wp with Vq. For that reason
+			// we run through all the pixels of the window.
+			for(int k = -length; k <= length; k++)
+			{
+			  for(int l = -length; l <= length; l++)
+			  {
+			    // For all the color components
+			    for(int c = 0; c < img.spectrum(); c++)
+			    {
+			      double value = (double) img(wp_x + l, wp_y + k, c) - (double) img(vq_x + l, vq_y + k, c);
+			      dist += value * value;
+			    }
+			  }
+			}
+
+        // This is used to compute the best candidate Vq 
+			if (dist < best_dist) 
+			{
+			  best_dist = dist;
+			  matrix(wp_x, wp_y).x = vq_x;
+			  matrix(wp_x, wp_y).y = vq_y;
+			}
+	      }
+	    }
+	  }
+	
+  }
+
+  // Fill data in matrix
+  double sigma = 5 * SIZE_WINDOW * SIZE_WINDOW;
+  matrix(wp_x,wp_y).similarity = exp( - best_dist / (2.0 * sigma * sigma));
+}
+ 
+ 
 void sc_mean_shift(
 	CImg<unsigned char> &candidates,
   	CImg<int> &mask)
@@ -579,7 +638,8 @@ void sc_fill_hole(
     for(int y = 0; y < img.height(); y++)
       for(int x = 0; x < img.width(); x++)
 	if (mask_Wp(x,y) == 255)
-	  sc_search_wp(x, y, img, mask_Vq, matrix); 
+	  //sc_search_wp(x, y, img, mask_Vq, matrix);
+	  sc_search_wp5(x, y, img, mask_Vq, matrix);  //< --------------
 
     // Once we have searched for all windows Wp in "mask_Vq", 
     // we fill the hole with the new color
@@ -668,7 +728,7 @@ void sc_fill_hole2(
     
     #pragma omp parallel num_threads(6)
     {
-        #pragma omp for
+        #pragma omp for nowait
         for (unsigned int j =0; j<vector_xy.size(); j++)
         {     
             sc_search_wp(vector_xy[j].x, vector_xy[j].y, img, mask_Vq, matrix);
@@ -725,13 +785,29 @@ void sc_fill_hole3(
 
     // Make a copy of the current image
     CImg<unsigned char> copy = img;
- #pragma omp parallel num_threads(6)
-    // Search for all pixel holes
-    for(int y = 0; y < img.height(); y++)
-      for(int x = 0; x < img.width(); x++)
-	if (mask_Wp(x,y) == 255)
-	  #pragma omp task
-	  sc_search_wp(x, y, img, mask_Vq, matrix); 
+   /*<--------  P1 Added section --------->*/                              
+    #pragma omp parallel  num_threads(6)
+   {
+      // Search for all pixel holes
+      
+      #pragma omp single
+      {
+        for(int y = 0; y < img.height(); y++)
+        {
+          for(int x = 0; x < img.width(); x++)
+          {
+            if (mask_Wp(x,y) == 255)
+            {
+              #pragma omp task
+              {
+                sc_search_wp(x, y, img, mask_Vq, matrix);
+              }
+            }
+          }
+        }
+      }
+    }
+    // <---------------- end -------------->            
 
     // Once we have searched for all windows Wp in "mask_Vq", 
     // we fill the hole with the new color
@@ -748,6 +824,93 @@ void sc_fill_hole3(
     iter++;
   }
 }
+
+
+void sc_fill_hole4(
+    CImg<unsigned char> &img,
+    CImg<unsigned char> &mask)
+	
+{
+	int iter;
+	vector<Coordinates> vector_xy ;
+
+  // Compute distance function within the mask
+  CImg<float> dist = mask;
+  dist.distance(0, 2);
+
+  // Compute points at which we can perform the search
+  CImg<unsigned char> mask_Vq(mask.width(), mask.height());
+  CImg<unsigned char> mask_Wp(mask.width(), mask.height());
+
+  sc_get_mask_Vq_Wp(mask, mask_Vq, mask_Wp);
+
+  // Image at which search results are stored
+  CImg<dataWp> matrix(img.width(), img.height()); 
+
+  // This process is repeated several times. At each iteration
+  // the color inside the hole is improved.
+	
+  iter = 0;
+	
+    // <----------   Added  P1  ----------->
+    // save hole pixels coordinates
+
+    for(int y = 0; y < img.height(); y++)		
+    {
+        for(int x = 0; x < img.width(); x++)
+        {
+            if (mask_Wp(x,y) == 255)
+            {
+                Coordinates c;
+                c.x = x;
+                c.y = y;
+                vector_xy.push_back(c);
+            }
+        }
+    }
+
+   // <---------------- end -------------->
+  while (iter < 10)
+  {
+    cout << "  Iteration number " << iter+1 << endl;
+
+    // Make a copy of the current image
+    CImg<unsigned char> copy = img;
+
+    /*<--------  P1 Added section --------->*/
+    
+    #pragma omp parallel num_threads(6)
+    {
+        #pragma omp single
+        for (unsigned int j =0; j<vector_xy.size(); j++)
+        {   
+	    #pragma omp task shared(img,matrix)
+            sc_search_wp(vector_xy[j].x, vector_xy[j].y, img, mask_Vq, matrix);
+        }
+    }
+	
+    /*------------- End section ----------------*/
+    // Once we have searched for all windows Wp in "mask_Vq", 
+    // we fill the hole with the new color
+
+    for(int y = 0; y < img.height(); y++)
+      for(int x = 0; x < img.width(); x++)
+        if (mask(x,y) == 255)
+            sc_get_color(x, y, img, matrix, dist);
+
+
+
+		
+
+    // Check if any pixel has changed. If no pixel
+    // has changed, we can exit the iterations.
+    if (copy == img)
+      break; 
+    iter++;
+  }
+	
+}
+
 /**
  *
  *  Binarizes the mask setting its values to 0 or 255. This function is used
@@ -1071,21 +1234,23 @@ int main(int argc, char **argv)
     cout << "Level " << i << endl;
 
     // Fill the hole of the image
-
+    start = clock();// <------------------------------------ time control, START -----------------------------> START
     sc_fill_hole2(multiscale_img(i), multiscale_mask(i));
- 
+    end = clock();// <------------------------------------ time control, END -----------------------------> END
     // Upscale the image to the next level
     if (i > 0)
       sc_upscale_img(multiscale_img(i), multiscale_mask(i-1), multiscale_img(i-1));
   }
+  
+  total += end - start;// <------------------------------------ time control, ACCUMULATE TOTAL -----------------------------> ACCUMULATE TOTAL
+  printf("Time : %f\n",(double)total/CLOCKS_PER_SEC );
   
   // Result...
   CImg<unsigned char> output = multiscale_img(0);
   output.save("output.png");
 		
   return 0;
-	start = clock();// <------------------------------------ time control, START -----------------------------> START
-	end = clock();// <------------------------------------ time control, END -----------------------------> END
-	total += end - start;// <------------------------------------ time control, ACCUMULATE TOTAL -----------------------------> ACCUMULATE TOTAL
-	printf("Time : %f\n",(double)total/CLOCKS_PER_SEC );
+	
+	
+	
 }
