@@ -1,5 +1,6 @@
 // Kernel code
 
+
 unsigned char getValue(__global unsigned char *img, int cols, int i, int j)
 {
   float val = img[i * cols + j]; 

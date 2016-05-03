@@ -29,3 +29,6 @@
 
 # png files
 *.png
+
+#compiler sequence
+compile.sh

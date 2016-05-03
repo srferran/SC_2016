@@ -1,7 +1,9 @@
 #include <stdio.h>
-
+#include <iostream>
 #include "CImg.h" 
 #include <CL/cl.h>
+
+
 
 // Source will be read from disk
 #define MAX_SOURCE_SIZE (0x100000)
@@ -99,14 +101,14 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
   // Create a command queue
   //----------------------------------------------------- 
 
-  cl_command_queue cmdQueue;
+      cl_command_queue cmdQueue;
 
-  cmdQueue = clCreateCommandQueue(
+      cmdQueue = clCreateCommandQueue(
       context, 
       devices[0], 
       CL_QUEUE_PROFILING_ENABLE, 
       &status);
-
+  
   //-----------------------------------------------------
   // Create and compile the program
   //----------------------------------------------------- 
@@ -258,8 +260,8 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
   // Configure the work-item structure
   //----------------------------------------------------- 
 
-  size_t globalWorkSize[1] = {1};
-  size_t localWorkSize[1] = {1};
+  size_t globalWorkSize[] = {32,32};
+  size_t localWorkSize[] = {32,8};
 
   //-----------------------------------------------------
   // Enqueue the kernel for execution

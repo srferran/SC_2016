@@ -1,11 +1,17 @@
 
 #include <iostream>
 #include "CImg.h"
-
+#include <math.h>
+#include <time.h>
 using namespace std;
 using namespace cimg_library;
 
+clock_t start;
+clock_t end;
+clock_t total;
+
 CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat);
+CImg<float> search(CImg<unsigned char> &image, CImg<unsigned char> &pattern);
 
 CImg<unsigned char> setBorder(CImg<unsigned char> &gray)
 {
@@ -57,8 +63,17 @@ int main( int argc, char** argv )
       cout << "Error: image is not graylevel nor color image" << endl;
   }
 
+  //cout << "img height: " << gray.height() << endl;
   CImg<unsigned char> gray_border = setBorder(gray);
+  //cout << "img height + border: " << gray_border.height() << endl;
+  //CImg<float> out = pattern_matching(gray_border, pattern);
+start = clock();// <---------------------------------- time control, START ---------------------------> START
   CImg<float> out = pattern_matching(gray_border, pattern);
+  //CImg<float> out = search(gray_border, pattern);
+
+end = clock();// <------------------------------------ time control, END -----------------------------> END
+total = end - start;// <------------------------------ time control, ACCUMULATE TOTAL-----------------> ACCUMULATE TOTAL
+printf("Time : %f\n",(double)total/CLOCKS_PER_SEC );
   CImg<unsigned char> norm_out= out.get_normalize(0, 255);
 
   norm_out.save(argv[3]);
@@ -66,22 +81,28 @@ int main( int argc, char** argv )
   return 0;
 }
 
-void search()
+
+CImg<float> search(CImg<unsigned char> &image, CImg<unsigned char> &pattern)
 {
-  for (int I_x  = 0; I_x<image.width; I_x++)
+  CImg<float> E (image.width()-15,image.height()-15,1,1,0);
+  float acumulat = 0.0;
+  for (int I_y  = 0; I_y<(image.height()-15); I_y++)
   {
-    for (int I_y  = 0; I_y<image.height; I_y++)
+    for (int I_x  = 0; I_x<(image.width()-15); I_x++)
     {
-        for(int i = 0; i<16; i++)
+        for(int j = 0; j<16; j++)
         {
-          for(int j = 0; j<16; j++)
+          for(int i = 0; i<16; i++)
           {
-             float acumulat += pow((img(I_x + j,I_y + i) - pattern(j,i)),2);
+
+             acumulat += pow((image(I_y + j,I_x + i) - pattern(j,i)),2);
           }
         }
-        E(I_x,I_y)= (1/256)*acumulat;
-        acumulat = 0;
+        E(I_y,I_x)= (1.0/256)*acumulat;
+        acumulat = 0.0;
     }
   }
+  return E;
 
 }
+
