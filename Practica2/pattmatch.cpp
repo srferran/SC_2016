@@ -134,7 +134,18 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
       NULL);
 
   if (status != CL_SUCCESS) {
-    printf("ERROR: compiling program.\n");
+    cl_build_status build_status;
+    clGetProgramBuildInfo(program, devices[0], CL_PROGRAM_BUILD_STATUS, sizeof(cl_build_status), &build_status, NULL);
+
+    char *build_log;
+    size_t ret_val_size;
+    clGetProgramBuildInfo(program, devices[0], CL_PROGRAM_BUILD_LOG, 0, NULL, &ret_val_size);
+
+    build_log = (char *) malloc(ret_val_size+1);
+    clGetProgramBuildInfo(program, devices[0], CL_PROGRAM_BUILD_LOG, ret_val_size, build_log, NULL);
+    build_log[ret_val_size] = '\0';
+    printf("BUILD LOG: \n %s", build_log);
+    free(build_log);
     exit(1);
   }
 
@@ -260,8 +271,8 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
   // Configure the work-item structure
   //----------------------------------------------------- 
 
-  size_t globalWorkSize[] = {32,32};
-  size_t localWorkSize[] = {32,8};
+  size_t globalWorkSize[] = {img.width(),img.height()};
+  size_t localWorkSize[] = {32,32};
 
   //-----------------------------------------------------
   // Enqueue the kernel for execution
@@ -274,7 +285,7 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
   status = clEnqueueNDRangeKernel(
       cmdQueue, 
       kernel, 
-      1, 
+      2, 
       NULL, 
       globalWorkSize, 
       localWorkSize, 

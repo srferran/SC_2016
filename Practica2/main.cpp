@@ -3,6 +3,9 @@
 #include "CImg.h"
 #include <math.h>
 #include <time.h>
+
+#define BLOCK_SIZE 32
+
 using namespace std;
 using namespace cimg_library;
 
