@@ -98,7 +98,8 @@ CImg<float> search(CImg<unsigned char> &image, CImg<unsigned char> &pattern)
              acumulat += pow((image(I_y + j,I_x + i) - pattern(j,i)),2);
           }
         }
-        E(I_y,I_x)= (1.0/256)*acumulat;
+        // (1.0/256.0)= 0.00390625;
+        E(I_y,I_x)= (0.00390625)*acumulat;
         acumulat = 0.0;
     }
   }
