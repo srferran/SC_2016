@@ -5,6 +5,7 @@
 
 
 
+
 // Source will be read from disk
 #define MAX_SOURCE_SIZE (0x100000)
 
@@ -23,7 +24,7 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
 
   // For the timer 
   struct timeval start, end;
-  long mtime, seconds, useconds;
+  float mtime, seconds, useconds;
 
 
   fp = fopen("kernel.cl", "r");
@@ -271,8 +272,8 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
   // Configure the work-item structure
   //----------------------------------------------------- 
   
-  size_t localWorkSize[1] = {1};
-  size_t globalWorkSize[] = {65536};
+  size_t localWorkSize[] = {32, 32};
+  size_t globalWorkSize[] = {256,256};
   
   //-----------------------------------------------------
   // Enqueue the kernel for execution
@@ -285,7 +286,7 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
   status = clEnqueueNDRangeKernel(
       cmdQueue, 
       kernel, 
-      1, 
+      2, 
       NULL, 
       globalWorkSize, 
       localWorkSize, 
@@ -309,7 +310,7 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
 
   total_time = time_end - time_start;
   printf("Execution of kernel time at GPU = %0.5f ms\n", total_time / 1000000.0);
-
+  printf("\n");
   //-----------------------------------------------------
   // Read the output buffer back to the host
   //----------------------------------------------------- 
@@ -333,9 +334,9 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
   seconds = end.tv_sec - start.tv_sec;
   useconds = end.tv_usec - start.tv_usec;
 
-  mtime = ((seconds) * 1000 + useconds / 1000.0);
+  mtime = ((seconds) * 1000.0 + useconds / 1000.0);
   //mostrem el temps emprat
-  cout << "Elapsed time of pattmatch function = %0.5f ms" << mtime << endl;
+  printf("Elapsed time of pattmatch function = %0.5f ms", mtime);
 
   //-----------------------------------------------------
   // Release OpenCL resources

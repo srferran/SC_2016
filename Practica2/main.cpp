@@ -35,6 +35,31 @@ CImg<unsigned char> setBorder(CImg<unsigned char> &gray)
   return gray_border;
 }
 
+
+CImg<float> search(CImg<unsigned char> &image, CImg<unsigned char> &pattern)
+{
+  CImg<float> E (image.width()-15,image.height()-15,1,1,0);
+  float acumulat = 0.0;
+  for (int I_y  = 0; I_y<(image.height()-15); I_y++)
+  {
+    for (int I_x  = 0; I_x<(image.width()-15); I_x++)
+    {
+        for(int j = 0; j<16; j++)
+        {
+          for(int i = 0; i<16; i++)
+          {
+             acumulat += pow((image(I_y + j,I_x + i) - pattern(j,i)),2);
+          }
+        }
+        // (1.0/256.0)= 0.00390625;
+        E(I_y,I_x)= (0.00390625)*acumulat;
+        acumulat = 0.0;
+    }
+  }
+  return E;
+}
+
+
 int main( int argc, char** argv )
 {
   if( argc != 4)
@@ -76,6 +101,7 @@ start = clock();// <---------------------------------- time control, START -----
 
 end = clock();// <------------------------------------ time control, END -----------------------------> END
 total = end - start;// <------------------------------ time control, ACCUMULATE TOTAL-----------------> ACCUMULATE TOTAL
+printf("\n");
 printf("Time : %f\n",(double)total/CLOCKS_PER_SEC );
   CImg<unsigned char> norm_out= out.get_normalize(0, 255);
 
@@ -83,31 +109,3 @@ printf("Time : %f\n",(double)total/CLOCKS_PER_SEC );
 
   return 0;
 }
-
-
-/*
-CImg<float> search(CImg<unsigned char> &image, CImg<unsigned char> &pattern)
-{
-  CImg<float> E (image.width()-15,image.height()-15,1,1,0);
-  float acumulat = 0.0;
-  for (int I_y  = 0; I_y<(image.height()-15); I_y++)
-  {
-    for (int I_x  = 0; I_x<(image.width()-15); I_x++)
-    {
-        for(int j = 0; j<16; j++)
-        {
-          for(int i = 0; i<16; i++)
-          {
-
-             acumulat += pow((image(I_y + j,I_x + i) - pattern(j,i)),2);
-          }
-        }
-        // (1.0/256.0)= 0.00390625;
-        E(I_y,I_x)= (0.00390625)*acumulat;
-        acumulat = 0.0;
-    }
-  }
-  return E;
-
-}*/
-

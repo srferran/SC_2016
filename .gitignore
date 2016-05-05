@@ -31,4 +31,4 @@
 *.png
 
 #compiler sequence
-compile.sh
+Practica2/compile.sh
