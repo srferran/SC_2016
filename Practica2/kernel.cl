@@ -46,8 +46,8 @@ __kernel void pattern_matching(
   for(int i = 0; i < out_rows; i++)
     for(int j = 0; j < out_cols; j++)
     { 
-      val = getValue(img, cols, i, j);
-      //val = calculateValue(i, j, cols, img, pat);
+      //val = getValue(img, cols, i, j);
+      val = calculateValue(i, j, cols, img, pat);
       setValue(out, out_cols, i, j, val);
     }
 }
