@@ -1,11 +1,12 @@
 // Kernel code
-include 
-#define BLOCK_SIZE 32
+
+#define BLOCK_SIZE_H 32
+#define BLOCK_SIZE_W 32
+
+#define pattern_H 16
+#define pattern_W 16
 
 
-
-/* cambiar width y heigth
-*/
 unsigned char getValue(__global unsigned char *img, int cols, int i, int j)
 {
   float val = img[i * cols + j]; 
@@ -24,37 +25,34 @@ __kernel void pattern_matching(
     int cols,
     __global float *out)
 {
-
 /*
-  // pattern length = pattern width * heigth = 16*16
-  __local float pattern_local[256];
-  
-  // copy from global to local memory
-  for (int i = 0 ; i < 16 ; i++)
-  {
-    for (int j = 0); j < 16 ; j++)
-    {
-      pattern_local[i * cols + j] = pat[i][j];
-    }
-  }
-*/
   float val= 0.0;  
   int out_rows = rows - 15;
   int out_cols = cols - 15;
   int row = get_global_id(1);
   int col = get_global_id(0);
-  int paso = img.width()/BLOCK_SIZE;
-  for(int k = 0; k < paso ; k++)
-  {
-      for (int e = 0; e < pat.width() ; e++)
-      {
-          val +=  img[row*paso + e] - pat[e * pat.width() + col] * img[row*paso + e] - pat[e * pat.width() + col];
-      }
-  } 
-    out[row*out.width + col] = val ;
+  int paso = rows/BLOCK_SIZE_W; //rows = img_width
+*/
+  // k y e no pueden ser 0 pues todos los hilos empezarian por cero
+  //for(int k = row; k < 256 ; k++)
+  //{
+  int row = get_global_id(1);
+  int col = get_global_id(0);
+
+  float out_value = 0;
+  for (int e = 0; e < rows; e++)
+    out_value = img[row * rows + e] ;
+  out[row * rows + col] = out_value;
+ 
+      
+
+      
+  //} 
+   // (1.0/256.0)= 0.00390625;
+    //out[row*out_rows + col] = val ;
    //val = getValue(img, cols, i, j);
    //setValue(out, out_cols, i, j, val);
-   val = 0.0; 
+    
 }
 
 /*

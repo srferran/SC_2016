@@ -85,6 +85,7 @@ printf("Time : %f\n",(double)total/CLOCKS_PER_SEC );
 }
 
 
+/*
 CImg<float> search(CImg<unsigned char> &image, CImg<unsigned char> &pattern)
 {
   CImg<float> E (image.width()-15,image.height()-15,1,1,0);
@@ -108,5 +109,5 @@ CImg<float> search(CImg<unsigned char> &image, CImg<unsigned char> &pattern)
   }
   return E;
 
-}
+}*/
 
