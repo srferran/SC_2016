@@ -1,6 +1,6 @@
 
 // Kernel code
-
+#define BLOCK_SIZE 32
 unsigned char getValue(__global unsigned char *img, int cols, int i, int j)
 {
   float val = img[i * cols + j]; 
@@ -30,7 +30,6 @@ float calculateValue(int i_pos, int j_pos, int cols, __global unsigned char *img
   return result;
 }
 
-
 __kernel void pattern_matching(
     __global unsigned char *img,
     __global unsigned char *pat,
@@ -38,13 +37,16 @@ __kernel void pattern_matching(
     int cols,
     __global float *out)
 {
-  
+	
+
+  int row = get_global_id(0);
+  int col = get_global_id(1);
   float val; 
   int out_rows = rows - 15;
   int out_cols = cols - 15;
 
-  for(int i = 0; i < out_rows; i++)
-    for(int j = 0; j < out_cols; j++)
+  for(int i = row; i < out_rows; i++)
+    for(int j = col; j < out_cols; j++)
     { 
       //val = getValue(img, cols, i, j);
       val = calculateValue(i, j, cols, img, pat);

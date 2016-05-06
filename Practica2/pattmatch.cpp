@@ -63,7 +63,7 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
 
   status = clGetDeviceIDs(
       platforms[0], 
-      CL_DEVICE_TYPE_ALL, 
+      CL_DEVICE_TYPE_GPU, 
       0, 
       NULL, 
       &numDevices);
@@ -74,7 +74,7 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
 
   status = clGetDeviceIDs(
       platforms[0], 
-      CL_DEVICE_TYPE_ALL,        
+      CL_DEVICE_TYPE_GPU,        
       numDevices, 
       devices, 
       NULL);
@@ -272,7 +272,7 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
   // Configure the work-item structure
   //----------------------------------------------------- 
   
-  size_t localWorkSize[] = {1};
+  size_t localWorkSize[] = {32,8};
   size_t globalWorkSize[] = {256,256};
   
   //-----------------------------------------------------
@@ -286,7 +286,7 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
   status = clEnqueueNDRangeKernel(
       cmdQueue, 
       kernel, 
-      1, 
+      2, 
       NULL, 
       globalWorkSize, 
       localWorkSize, 
