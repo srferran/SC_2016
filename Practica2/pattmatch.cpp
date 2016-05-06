@@ -272,7 +272,7 @@ CImg<float> pattern_matching(CImg<unsigned char> &img, CImg<unsigned char> &pat)
   // Configure the work-item structure
   //----------------------------------------------------- 
   
-  size_t localWorkSize[] = {32,8};
+  size_t localWorkSize[] = {8,32};
   size_t globalWorkSize[] = {256,256};
   
   //-----------------------------------------------------
