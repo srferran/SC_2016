@@ -65,7 +65,7 @@ __kernel void pattern_matching(
   {
   	for(int j=0; j<rows/BLOCK_SIZE; j++)
     {
-    	for(int k=0; k<16; k++)
+    	for(int k=0; k<6; k++)
     	{
     		for(int l=0; l<2; l++)
 	    	{
