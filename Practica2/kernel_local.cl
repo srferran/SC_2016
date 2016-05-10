@@ -72,7 +72,7 @@ __kernel void pattern_matching(
 
 	    		img_local[8 * k + get_local_id(0)][32 * l + get_local_id(1)] = 
 	    		img[((rows/BLOCK_SIZE)*32 + get_global_id(0)) * 256 + (rows/BLOCK_SIZE)*32 + get_global_id(1)];
-          barrier(CLK_LOCAL_MEM_FENCE);
+
 	    	}
     	}
       barrier(CLK_LOCAL_MEM_FENCE);
