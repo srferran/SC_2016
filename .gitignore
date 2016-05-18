@@ -32,3 +32,7 @@
 
 #compiler sequence
 compile.sh
+
+#database
+*.csv
+*.bz2
